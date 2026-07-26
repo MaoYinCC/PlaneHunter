@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Force Battle - Plane Bomber</title>
+    <style>
+        :root {
+            --bg-color: #0b132b;
+            --card-bg: #1c2541;
+            --border-color: #3a506b;
+            --accent-blue: #6fffe9;
+            --accent-red: #ff0055;
+            --accent-orange: #ff9f1c;
+            --accent-green: #00f5d4;
+            --cell-size: 38px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            max-width: 960px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            color: var(--accent-blue);
+            font-size: 32px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(111, 255, 233, 0.4);
+        }
+
+        .top-tools {
+            position: absolute;
+            right: 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: #94a3b8;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .lang-btn:hover {
+            color: #fff;
+            border-color: var(--accent-blue);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-blue);
+            color: #0b132b;
+            font-weight: 700;
+        }
+
+        .status-bar {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--accent-orange);
+            height: 24px;
+            text-align: center;
+        }
+
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .board-wrapper {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            position: relative;
+        }
+
+        .board-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--accent-blue);
+        }
+
+        .grid-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 32px repeat(9, var(--cell-size));
+            grid-template-rows: 32px repeat(9, var(--cell-size));
+            gap: 2px;
+            background-color: var(--border-color);
+            padding: 2px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .cell {
+            background-color: #111827;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 3px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header { background-color: #0b132b; color: #64748b; font-size: 13px; }
+
+        .targetable { cursor: pointer; transition: all 0.15s ease; }
+        .targetable:hover {
+            background-color: #374151;
+            transform: scale(1.04);
+            z-index: 5;
+            box-shadow: 0 0 8px rgba(111, 255, 233, 0.5);
+        }
+
+        /* 摆放阶段预览样式 */
+        .cell.hover-valid {
+            background-color: rgba(0, 245, 212, 0.45) !important;
+            border: 1px solid var(--accent-green);
+        }
+        .cell.hover-invalid {
+            background-color: rgba(255, 0, 85, 0.45) !important;
+            border: 1px solid var(--accent-red);
+        }
+        .cell.placed-plane {
+            background-color: rgba(111, 255, 233, 0.15);
+        }
+
+        .miss::after { content: '•'; font-size: 20px; color: #6b7280; }
+        .hit { background-color: rgba(255, 159, 28, 0.2); border: 1px solid var(--accent-orange); }
+        .hit::after { content: '✖'; font-size: 16px; color: var(--accent-orange); }
+        .head-boom { background-color: rgba(255, 0, 85, 0.3); border: 1px solid var(--accent-red); animation: boomPulse 0.4s ease-out; }
+        .head-boom::after { content: '💥'; font-size: 18px; }
+
+        @keyframes boomPulse {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .planes-layer {
+            position: absolute;
+            top: 34px; left: 34px;
+            width: calc(9 * var(--cell-size) + 16px);
+            height: calc(9 * var(--cell-size) + 16px);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .control-panel {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button.btn-primary {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: linear-gradient(135deg, #00f5d4, #00bbf9);
+            color: #0b132b;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0, 245, 212, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        button.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 245, 212, 0.5); }
+        button.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; filter: grayscale(1); }
+
+        .btn-action {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: #f8fafc;
+            padding: 10px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { border-color: var(--accent-blue); background: rgba(255, 255, 255, 0.05); }
+
+        .btn-danger {
+            background: rgba(255, 0, 85, 0.15);
+            border: 1px solid var(--accent-red);
+            color: #ff0055;
+            padding: 10px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-danger:hover {
+            background: var(--accent-red);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(11, 19, 43, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 2px solid var(--accent-blue);
+            padding: 30px 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(111, 255, 233, 0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            width: 380px;
+        }
+
+        .modal-overlay.active .modal-card { transform: scale(1); }
+        .modal-title { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
+        .modal-desc { font-size: 15px; color: #94a3b8; margin-bottom: 25px; }
+        .modal-btns { display: flex; gap: 12px; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>✈️ 炸飞机 / Air Force Battle</h1>
+        <div class="top-tools">
+            <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()">🌐 English</button>
+        </div>
+    </div>
+
+    <div class="mode-selector">
+        <button class="mode-btn active" id="btn-pve" onclick="switchMode('pve')">单人模式</button>
+        <button class="mode-btn" id="btn-pvp" onclick="switchMode('pvp')">双人模式</button>
+    </div>
+
+    <div class="status-bar" id="statusBar">🛠️ 点击网格旋转当前战机；锁定后自动调整下一架</div>
+
+    <div class="game-container">
+        <!-- Player Grid -->
+        <div class="board-wrapper">
+            <div class="board-title" id="playerBoardTitle">🛡️ 我方阵地 (手动布阵)</div>
+
+            <div class="grid-container">
+                <div id="player-grid" class="grid"></div>
+                <svg id="player-planes-svg" class="planes-layer"></svg>
+            </div>
+        </div>
+
+        <!-- Enemy Grid -->
+        <div class="board-wrapper" id="enemyWrapper">
+            <div class="board-title" id="enemyBoardTitle">🎯 敌方阵地</div>
+            <div class="grid-container">
+                <div id="ai-grid" class="grid"></div>
+                <svg id="ai-planes-svg" class="planes-layer"></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <button class="btn-action" id="lockPlaneBtn" onclick="confirmSinglePlane()">📌 锁定战机</button>
+        <button class="btn-action" id="randomBtn" onclick="randomizePlayerPlanes()">🎲 随机布阵</button>
+        <button class="btn-action" id="clearBtn" onclick="clearPlayerPlanes()">🗑️ 清空</button>
+        <button class="btn-primary" id="startBtn" onclick="confirmPlacement()" disabled>🚀 确认开战</button>
+        <button class="btn-danger" id="exitBtn" onclick="exitGame()" style="display: none;">🚪 退出 / 重新布阵</button>
+        <button class="lang-btn" id="soundBtn" onclick="toggleSound()">🔊 音效: 开</button>
+    </div>
+
+    <div class="modal-overlay" id="resultModal">
+        <div class="modal-card">
+            <div class="modal-title" id="modalTitle">🎉 大获全胜！</div>
+            <div class="modal-desc" id="modalDesc">你成功摧毁了敌方所有战机！</div>
+            <div class="modal-btns">
+                <button class="btn-action" id="reviewBtn" onclick="reviewBoard()">🔍 战局复盘</button>
+                <button class="btn-primary" id="replayBtn" onclick="initPlacementStage(); closeModal();">🔄 再来一局</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const i18n = {
+            zh: {
+                langBtn: '🌐 English',
+                pveMode: '单人模式',
+                pvpMode: '双人模式',
+                statusPlacing: '🛠️ 点击网格旋转战机；满意后点击“锁定战机”切换下一架',
+                statusPlacingFull: '✅ 3架战机已就位！点击“🚀 确认开战”开始游戏',
+                pveStatus: '🎯 战斗开始：点击敌方区域探测敌机位置并击落机头！',
+                pvpStatus: '👥 双人模式：点击右侧棋盘循环标记 [空 • / 机身 ✖ / 机头 💥]',
+                myTerritory: '🛡️ 我方阵地',
+                enemyTerritoryPVE: '🎯 敌方阵地',
+                enemyTerritoryPVP: '🎯 敌方阵地 (手动记录)',
+                lockPlane: '📌 锁定战机',
+                random: '🎲 随机布阵',
+                clear: '🗑️ 清空',
+                start: '🚀 确认开战',
+                exit: '🚪 退出 / 重新布阵',
+                soundOn: '🔊 音效: 开',
+                soundOff: '🔇 音效: 关',
+                winTitle: '🎉 大获全胜！',
+                winDesc: '精准打击！你成功摧毁了敌方所有战机。',
+                loseTitle: '💀 遗憾战败！',
+                loseDesc: '敌方指挥官突破了你的防线！',
+                statusWin: '🏆 游戏结束 - 你赢了！',
+                statusLose: '💀 游戏结束 - 电脑获胜！',
+                reviewMode: '🔍 战局复盘模式：已揭示双方战机位置。',
+                reviewBtn: '🔍 战局复盘',
+                replayBtn: '🔄 再来一局'
+            },
+            en: {
+                langBtn: '🌐 中文',
+                pveMode: 'Single Player',
+                pvpMode: '2 Players',
+                statusPlacing: '🛠️ Click grid to rotate plane; click "Lock Plane" when done',
+                statusPlacingFull: '✅ All 3 planes locked! Click "Start Battle" to play',
+                pveStatus: '🎯 Battle Phase: Click enemy grid to locate and destroy aircraft heads!',
+                pvpStatus: '👥 2 Players: Click right grid to cycle marks [Empty • / Body ✖ / Head 💥]',
+                myTerritory: '🛡️ My Territory',
+                enemyTerritoryPVE: '🎯 Enemy Territory',
+                enemyTerritoryPVP: '🎯 Enemy Territory (Tracker)',
+                lockPlane: '📌 Lock Plane',
+                random: '🎲 Random',
+                clear: '🗑️ Clear',
+                start: '🚀 Start Battle',
+                exit: '🚪 Exit / Re-deploy',
+                soundOn: '🔊 Sound: ON',
+                soundOff: '🔇 Sound: OFF',
+                winTitle: '🎉 Victory!',
+                winDesc: 'Precision strike! You destroyed all enemy aircrafts.',
+                loseTitle: '💀 Defeated!',
+                loseDesc: 'The enemy broke through your defenses!',
+                statusWin: '🏆 Game Over - You Won!',
+                statusLose: '💀 Game Over - AI Won!',
+                reviewMode: '🔍 Review Mode: All formations revealed.',
+                reviewBtn: '🔍 Review',
+                replayBtn: '🔄 Play Again'
+            }
+        };
+
+        let currentLang = 'zh';
+
+        const SIZE = 9;
+        const CELL_SIZE = 38;
+        const GAP = 2;
+
+        let gameMode = 'pve'; 
+        let isPlacingStage = true;
+        let selectedPlaneIndex = 0; // 当前正在摆放的战机 (0, 1, 2)
+        let currentDirIndex = 0; // 0: U, 1: R, 2: D, 3: L
+        const DIRS = ['U', 'R', 'D', 'L'];
+
+        let hoveredR = -1, hoveredC = -1;
+
+        let playerBoard, aiBoard;
+        let playerPlanes = [], aiPlanes = [];
+        let playerHeads, aiHeads;
+        let gameOver = false;
+        let soundEnabled = true;
+
+        let aiTargetQueue = [];
+
+        const PLANE_SHAPES = {
+            'U': [
+                {r:0, c:0, part:'head'},
+                {r:1, c:-1, part:'wing'}, {r:1, c:0, part:'body'}, {r:1, c:1, part:'wing'},
+                {r:2, c:0, part:'tail'}
+            ],
+            'D': [
+                {r:0, c:0, part:'head'},
+                {r:-1, c:-1, part:'wing'}, {r:-1, c:0, part:'body'}, {r:-1, c:1, part:'wing'},
+                {r:-2, c:0, part:'tail'}
+            ],
+            'L': [
+                {r:0, c:0, part:'head'},
+                {r:-1, c:1, part:'wing'}, {r:0, c:1, part:'body'}, {r:1, c:1, part:'wing'},
+                {r:0, c:2, part:'tail'}
+            ],
+            'R': [
+                {r:0, c:0, part:'head'},
+                {r:-1, c:-1, part:'wing'}, {r:0, c:-1, part:'body'}, {r:1, c:-1, part:'wing'},
+                {r:0, c:-2, part:'tail'}
+            ]
+        };
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 快捷键: 空格 / 回车 锁定当前飞机
+        window.addEventListener('keydown', (e) => {
+            if (isPlacingStage && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                confirmSinglePlane();
+            }
+        });
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            updateUIByLanguage();
+        }
+
+        function updateUIByLanguage() {
+            const t = i18n[currentLang];
+            document.getElementById('langToggleBtn').innerText = t.langBtn;
+            document.getElementById('btn-pve').innerText = t.pveMode;
+            document.getElementById('btn-pvp').innerText = t.pvpMode;
+            document.getElementById('playerBoardTitle').innerText = t.myTerritory;
+            document.getElementById('enemyBoardTitle').innerText = gameMode === 'pve' ? t.enemyTerritoryPVE : t.enemyTerritoryPVP;
+            document.getElementById('lockPlaneBtn').innerText = t.lockPlane;
+            document.getElementById('randomBtn').innerText = t.random;
+            document.getElementById('clearBtn').innerText = t.clear;
+            document.getElementById('startBtn').innerText = t.start;
+            document.getElementById('exitBtn').innerText = t.exit;
+            document.getElementById('soundBtn').innerText = soundEnabled ? t.soundOn : t.soundOff;
+            document.getElementById('reviewBtn').innerText = t.reviewBtn;
+            document.getElementById('replayBtn').innerText = t.replayBtn;
+
+            if (isPlacingStage) {
+                document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
+            } else if (!gameOver) {
+                document.getElementById('statusBar').innerText = gameMode === 'pve' ? t.pveStatus : t.pvpStatus;
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+
+            if (type === 'miss') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.12);
+            } else if (type === 'hit') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.18);
+            } else if (type === 'boom') {
+                const bufferSize = audioCtx.sampleRate * 0.4;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, now);
+                filter.frequency.linearRampToValueAtTime(30, now + 0.4);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.8, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                noise.start(now);
+            } else if (type === 'win') {
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.25);
+                });
+            } else if (type === 'lose') {
+                const notes = [300, 260, 220, 150];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.15);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.15 + 0.3);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.15);
+                    osc.stop(now + idx * 0.15 + 0.3);
+                });
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const t = i18n[currentLang];
+            document.getElementById('soundBtn').innerText = soundEnabled ? t.soundOn : t.soundOff;
+        }
+
+        function switchMode(mode) {
+            gameMode = mode;
+            document.getElementById('btn-pve').classList.toggle('active', mode === 'pve');
+            document.getElementById('btn-pvp').classList.toggle('active', mode === 'pvp');
+            initPlacementStage();
+        }
+
+        function createEmptyBoard() {
+            return Array(SIZE).fill(null).map(() => Array(SIZE).fill(null).map(() => ({ type: 'empty', hitState: 'none', hit: false, planeId: null })));
+        }
+
+        function canPlacePlane(board, headR, headC, dir, ignorePlaneId = null) {
+            const shape = PLANE_SHAPES[dir];
+            for (let pt of shape) {
+                let r = headR + pt.r, c = headC + pt.c;
+                if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return false;
+                const cell = board[r][c];
+                if (cell.type !== 'empty' && cell.planeId !== ignorePlaneId) return false;
+            }
+            return true;
+        }
+
+        function placePlane(board, planeList, headR, headC, dir, planeId) {
+            const shape = PLANE_SHAPES[dir];
+            const planeInfo = { id: planeId, headR, headC, dir };
+            for (let pt of shape) {
+                let r = headR + pt.r, c = headC + pt.c;
+                board[r][c].type = pt.part === 'head' ? 'head' : 'body';
+                board[r][c].planeId = planeId;
+            }
+            planeList.push(planeInfo);
+        }
+
+        function removePlaneFromBoard(board, planeList, planeId) {
+            const idx = planeList.findIndex(p => p.id === planeId);
+            if (idx !== -1) planeList.splice(idx, 1);
+
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    if (board[r][c].planeId === planeId) {
+                        board[r][c] = { type: 'empty', hitState: 'none', hit: false, planeId: null };
+                    }
+                }
+            }
+        }
+
+        /* ---------------- 初始化布阵阶段 ---------------- */
+        function initPlacementStage() {
+            closeModal();
+            isPlacingStage = true;
+            gameOver = false;
+            playerBoard = createEmptyBoard();
+            aiBoard = createEmptyBoard();
+            playerPlanes = []; aiPlanes = [];
+            playerHeads = 3; aiHeads = 3;
+            aiTargetQueue = [];
+            selectedPlaneIndex = 0;
+
+            document.getElementById('lockPlaneBtn').style.display = 'inline-block';
+            document.getElementById('randomBtn').style.display = 'inline-block';
+            document.getElementById('clearBtn').style.display = 'inline-block';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('exitBtn').style.display = 'none';
+
+            updateUIByLanguage();
+
+            renderBoard('player-grid', playerBoard, true);
+            renderBoard('ai-grid', aiBoard, false);
+            drawPlanesSVG('player-planes-svg', playerPlanes, true);
+            drawPlanesSVG('ai-planes-svg', aiPlanes, false);
+            updateStartButtonState();
+        }
+
+        function updateStartButtonState() {
+            document.getElementById('startBtn').disabled = playerPlanes.length !== 3;
+            const t = i18n[currentLang];
+            if (isPlacingStage) {
+                document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
+            }
+        }
+
+        function clearPlayerPlanes() {
+            playerBoard = createEmptyBoard();
+            playerPlanes = [];
+            selectedPlaneIndex = 0;
+            renderBoard('player-grid', playerBoard, true);
+            drawPlanesSVG('player-planes-svg', playerPlanes, true);
+            updateStartButtonState();
+        }
+
+        function randomizePlayerPlanes() {
+            playerBoard = createEmptyBoard();
+            playerPlanes = [];
+            autoGeneratePlanes(playerBoard, playerPlanes);
+            renderBoard('player-grid', playerBoard, true);
+            drawPlanesSVG('player-planes-svg', playerPlanes, true);
+            updateStartButtonState();
+        }
+
+        function autoGeneratePlanes(board, planeList) {
+            let count = 0;
+            let attempts = 0;
+
+            const positions = [];
+            for(let r=0; r<SIZE; r++) {
+                for(let c=0; c<SIZE; c++) positions.push({r, c});
+            }
+
+            while (count < 3 && attempts < 1000) {
+                attempts++;
+                positions.sort(() => Math.random() - 0.5);
+                const dirsShuffled = [...DIRS].sort(() => Math.random() - 0.5);
+
+                for (let pos of positions) {
+                    for (let dir of dirsShuffled) {
+                        if (canPlacePlane(board, pos.r, pos.c, dir)) {
+                            placePlane(board, planeList, pos.r, pos.c, dir, count + 1);
+                            count++;
+                            if (count === 3) break;
+                        }
+                    }
+                    if (count === 3) break;
+                }
+            }
+            if (count < 3) {
+                for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) board[r][c] = { type: 'empty', hitState: 'none', hit: false, planeId: null };
+                planeList.length = 0;
+                autoGeneratePlanes(board, planeList);
+            }
+        }
+
+        // 锁定当前选中的战机位置，并自动切换到下一架未放置的战机
+        function confirmSinglePlane() {
+            const targetPlaneId = selectedPlaneIndex + 1;
+            if (!playerPlanes.some(p => p.id === targetPlaneId)) {
+                playSound('miss');
+                return;
+            }
+
+            // 寻找下一个还没放置的战机序号
+            for (let i = 0; i < 3; i++) {
+                if (!playerPlanes.some(p => p.id === i + 1)) {
+                    selectedPlaneIndex = i;
+                    break;
+                }
+            }
+
+            playSound('hit');
+            updateStartButtonState();
+        }
+
+        function confirmPlacement() {
+            if (playerPlanes.length < 3) return;
+
+            isPlacingStage = false;
+            document.getElementById('lockPlaneBtn').style.display = 'none';
+            document.getElementById('randomBtn').style.display = 'none';
+            document.getElementById('clearBtn').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('exitBtn').style.display = 'inline-block';
+
+            if (gameMode === 'pve') {
+                autoGeneratePlanes(aiBoard, aiPlanes);
+            }
+
+            updateUIByLanguage();
+            renderBoard('player-grid', playerBoard, true);
+            renderBoard('ai-grid', aiBoard, false);
+            drawPlanesSVG('player-planes-svg', playerPlanes, true);
+            drawPlanesSVG('ai-planes-svg', aiPlanes, false);
+        }
+
+        /* 退出 / 重新布阵 */
+        function exitGame() {
+            initPlacementStage();
+        }
+
+        /* ---------------- 网格绘制与鼠标事件 ---------------- */
+        function renderBoard(elementId, board, isPlayer) {
+            const gridEl = document.getElementById(elementId);
+            gridEl.innerHTML = '';
+
+            gridEl.appendChild(createCell('', 'header'));
+            for (let c = 1; c <= SIZE; c++) gridEl.appendChild(createCell(c, 'header'));
+
+            for (let r = 0; r < SIZE; r++) {
+                gridEl.appendChild(createCell(r + 1, 'header'));
+                for (let c = 0; c < SIZE; c++) {
+                    const cellData = board[r][c];
+                    const cellEl = createCell('', 'cell');
+
+                    if (isPlacingStage && isPlayer) {
+                        if (cellData.type !== 'empty') cellEl.classList.add('placed-plane');
+
+                        cellEl.style.cursor = 'pointer';
+                        cellEl.onmouseenter = () => {
+                            hoveredR = r;
+                            hoveredC = c;
+                            highlightPlacementPreview(r, c);
+                        };
+                        cellEl.onmouseleave = () => {
+                            hoveredR = -1;
+                            hoveredC = -1;
+                            clearPlacementPreview();
+                        };
+                        
+                        // 每次点击：旋转当前战机并更新位置
+                        cellEl.onclick = () => handlePlacementClick(r, c);
+
+                        cellEl.oncontextmenu = (e) => {
+                            e.preventDefault();
+                            handlePlacementClick(r, c);
+                        };
+                    } else if (!isPlacingStage) {
+                        if (gameMode === 'pve') {
+                            if (cellData.hit) {
+                                if (cellData.type === 'head') cellEl.classList.add('head-boom');
+                                else if (cellData.type === 'body') cellEl.classList.add('hit');
+                                else cellEl.classList.add('miss');
+                            } else if (!isPlayer && !gameOver) {
+                                cellEl.classList.add('targetable');
+                                cellEl.onclick = () => playerAttackPVE(r, c);
+                            }
+                        } else {
+                            if (isPlayer) {
+                                if (cellData.hit) {
+                                    if (cellData.type === 'head') cellEl.classList.add('head-boom');
+                                    else if (cellData.type === 'body') cellEl.classList.add('hit');
+                                    else cellEl.classList.add('miss');
+                                } else {
+                                    cellEl.classList.add('targetable');
+                                    cellEl.onclick = () => togglePlayerHit(r, c);
+                                }
+                            } else {
+                                if (cellData.hitState === 'miss') cellEl.classList.add('miss');
+                                else if (cellData.hitState === 'hit') cellEl.classList.add('hit');
+                                else if (cellData.hitState === 'boom') cellEl.classList.add('head-boom');
+
+                                cellEl.classList.add('targetable');
+                                cellEl.onclick = () => togglePVPManualMark(r, c);
+                            }
+                        }
+                    }
+
+                    gridEl.appendChild(cellEl);
+                }
+            }
+        }
+
+        function createCell(text, className) {
+            const div = document.createElement('div');
+            div.className = `cell ${className}`;
+            div.innerText = text;
+            return div;
+        }
+
+        /* ---------------- 手动布阵与旋转逻辑 ---------------- */
+        function highlightPlacementPreview(r, c) {
+            clearPlacementPreview();
+            const targetPlaneId = selectedPlaneIndex + 1;
+            const dir = DIRS[currentDirIndex];
+            const isValid = canPlacePlane(playerBoard, r, c, dir, targetPlaneId);
+
+            const shape = PLANE_SHAPES[dir];
+            const gridEl = document.getElementById('player-grid');
+
+            shape.forEach(pt => {
+                let pr = r + pt.r, pc = c + pt.c;
+                if (pr >= 0 && pr < SIZE && pc >= 0 && pc < SIZE) {
+                    const cellIndex = (pr + 1) * (SIZE + 1) + (pc + 1);
+                    const cellEl = gridEl.children[cellIndex];
+                    if (cellEl) {
+                        cellEl.classList.add(isValid ? 'hover-valid' : 'hover-invalid');
+                    }
+                }
+            });
+        }
+
+        function clearPlacementPreview() {
+            const cells = document.querySelectorAll('#player-grid .cell');
+            cells.forEach(c => c.classList.remove('hover-valid', 'hover-invalid'));
+        }
+
+        // 每次点击棋盘：旋转方向 90 度并尝试摆放
+        function handlePlacementClick(r, c) {
+            const targetPlaneId = selectedPlaneIndex + 1;
+            
+            // 切换方向
+            currentDirIndex = (currentDirIndex + 1) % DIRS.length;
+            const dir = DIRS[currentDirIndex];
+
+            // 判断是否合规
+            if (canPlacePlane(playerBoard, r, c, dir, targetPlaneId)) {
+                removePlaneFromBoard(playerBoard, playerPlanes, targetPlaneId);
+                placePlane(playerBoard, playerPlanes, r, c, dir, targetPlaneId);
+
+                renderBoard('player-grid', playerBoard, true);
+                drawPlanesSVG('player-planes-svg', playerPlanes, true);
+                updateStartButtonState();
+                highlightPlacementPreview(r, c);
+            } else {
+                playSound('miss');
+                highlightPlacementPreview(r, c);
+            }
+        }
+
+        /* ---------------- PVE 战斗逻辑 ---------------- */
+        function playerAttackPVE(r, c) {
+            if (gameOver || aiBoard[r][c].hit) return;
+
+            aiBoard[r][c].hit = true;
+
+            if (aiBoard[r][c].type === 'head') {
+                aiHeads--;
+                playSound('boom');
+            } else if (aiBoard[r][c].type === 'body') {
+                playSound('hit');
+            } else {
+                playSound('miss');
+            }
+
+            renderBoard('ai-grid', aiBoard, false);
+            drawPlanesSVG('ai-planes-svg', aiPlanes, false);
+
+            if (aiHeads === 0) {
+                gameOver = true;
+                showGameOverModal(true);
+                return;
+            }
+
+            setTimeout(aiTurnPVE, 350);
+        }
+
+        function aiTurnPVE() {
+            if (gameOver) return;
+
+            let target = null;
+
+            while (aiTargetQueue.length > 0) {
+                let candidate = aiTargetQueue.shift();
+                if (!playerBoard[candidate.r][candidate.c].hit) {
+                    target = candidate;
+                    break;
+                }
+            }
+
+            if (!target) {
+                let unhitCells = [];
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (!playerBoard[r][c].hit) unhitCells.push({ r, c });
+                    }
+                }
+                if (unhitCells.length === 0) return;
+                target = unhitCells[Math.floor(Math.random() * unhitCells.length)];
+            }
+
+            const { r, c } = target;
+            playerBoard[r][c].hit = true;
+
+            if (playerBoard[r][c].type === 'head') {
+                playerHeads--;
+                playSound('boom');
+                aiTargetQueue = [];
+            } else if (playerBoard[r][c].type === 'body') {
+                playSound('hit');
+                const neighbors = [
+                    { r: r - 1, c: c }, { r: r + 1, c: c },
+                    { r: r, c: c - 1 }, { r: r, c: c + 1 }
+                ].sort(() => Math.random() - 0.5);
+
+                for (let n of neighbors) {
+                    if (n.r >= 0 && n.r < SIZE && n.c >= 0 && n.c < SIZE) {
+                        if (!playerBoard[n.r][n.c].hit && !aiTargetQueue.some(q => q.r === n.r && q.c === n.c)) {
+                            aiTargetQueue.push(n);
+                        }
+                    }
+                }
+            } else {
+                playSound('miss');
+            }
+
+            renderBoard('player-grid', playerBoard, true);
+
+            if (playerHeads === 0) {
+                gameOver = true;
+                showGameOverModal(false);
+            }
+        }
+
+        /* ---------------- PVP 模式手动标记 ---------------- */
+        function togglePVPManualMark(r, c) {
+            const states = ['none', 'miss', 'hit', 'boom'];
+            const currentState = aiBoard[r][c].hitState || 'none';
+            const nextIndex = (states.indexOf(currentState) + 1) % states.length;
+            const nextState = states[nextIndex];
+
+            aiBoard[r][c].hitState = nextState;
+
+            if (nextState === 'miss') playSound('miss');
+            else if (nextState === 'hit') playSound('hit');
+            else if (nextState === 'boom') playSound('boom');
+
+            renderBoard('ai-grid', aiBoard, false);
+        }
+
+        function togglePlayerHit(r, c) {
+            if (playerBoard[r][c].hit) return;
+            playerBoard[r][c].hit = true;
+
+            if (playerBoard[r][c].type === 'head') playSound('boom');
+            else if (playerBoard[r][c].type === 'body') playSound('hit');
+            else playSound('miss');
+
+            renderBoard('player-grid', playerBoard, true);
+        }
+
+        /* ---------------- 弹窗与复盘 ---------------- */
+        function showGameOverModal(isPlayerWin) {
+            const modal = document.getElementById('resultModal');
+            const title = document.getElementById('modalTitle');
+            const desc = document.getElementById('modalDesc');
+            const t = i18n[currentLang];
+
+            if (isPlayerWin) {
+                title.innerText = t.winTitle;
+                title.style.color = 'var(--accent-blue)';
+                desc.innerText = t.winDesc;
+                playSound('win');
+            } else {
+                title.innerText = t.loseTitle;
+                title.style.color = 'var(--accent-red)';
+                desc.innerText = t.loseDesc;
+                playSound('lose');
+            }
+
+            document.getElementById('statusBar').innerText = isPlayerWin ? t.statusWin : t.statusLose;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('active');
+        }
+
+        function reviewBoard() {
+            closeModal();
+            drawPlanesSVG('ai-planes-svg', aiPlanes, true);
+            drawPlanesSVG('player-planes-svg', playerPlanes, true);
+            document.getElementById('statusBar').innerText = i18n[currentLang].reviewMode;
+        }
+
+        /* ---------------- SVG 飞机矢量渲染 ---------------- */
+        function drawPlanesSVG(svgId, planes, showAlways) {
+            const svg = document.getElementById(svgId);
+            svg.innerHTML = '';
+
+            planes.forEach(plane => {
+                const headHit = aiBoard[plane.headR][plane.headC].hit;
+                if (!showAlways && !headHit && !gameOver) return;
+
+                const { headR, headC, dir } = plane;
+
+                const getPx = (r, c) => ({
+                    x: c * (CELL_SIZE + GAP) + CELL_SIZE / 2,
+                    y: r * (CELL_SIZE + GAP) + CELL_SIZE / 2
+                });
+
+                const headCenter = getPx(headR, headC);
+
+                let angle = 0;
+                if (dir === 'D') angle = 180;
+                if (dir === 'L') angle = 270;
+                if (dir === 'R') angle = 90;
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${headCenter.x}, ${headCenter.y}) rotate(${angle})`);
+
+                const S = CELL_SIZE + GAP;
+                const stroke = showAlways ? '#00f5d4' : '#ff0055';
+                const fill = showAlways ? 'rgba(0, 245, 212, 0.25)' : 'rgba(255, 0, 85, 0.35)';
+
+                const body = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                body.setAttribute('x', '-5');
+                body.setAttribute('y', '-8');
+                body.setAttribute('width', '10');
+                body.setAttribute('height', `${S * 2 + 18}`);
+                body.setAttribute('rx', '5');
+                body.setAttribute('fill', fill);
+                body.setAttribute('stroke', stroke);
+                body.setAttribute('stroke-width', '1.8');
+
+                const mainWing = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                mainWing.setAttribute('x', `-${S * 0.92}`);
+                mainWing.setAttribute('y', `${S - 7}`);
+                mainWing.setAttribute('width', `${S * 1.84}`);
+                mainWing.setAttribute('height', `14`);
+                mainWing.setAttribute('rx', `5`);
+                mainWing.setAttribute('fill', fill);
+                mainWing.setAttribute('stroke', stroke);
+                mainWing.setAttribute('stroke-width', '2');
+
+                const tailWing = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                tailWing.setAttribute('x', `-${S * 0.45}`);
+                tailWing.setAttribute('y', `${S * 2 + 1}`);
+                tailWing.setAttribute('width', `${S * 0.9}`);
+                tailWing.setAttribute('height', `8`);
+                tailWing.setAttribute('rx', `3`);
+                tailWing.setAttribute('fill', fill);
+                tailWing.setAttribute('stroke', stroke);
+                tailWing.setAttribute('stroke-width', '1.5');
+
+                const propHub = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                propHub.setAttribute('cx', '0'); propHub.setAttribute('cy', '-8'); propHub.setAttribute('r', '4.5');
+                propHub.setAttribute('fill', '#ff0055');
+
+                const propBlade1 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                propBlade1.setAttribute('cx', '0'); propBlade1.setAttribute('cy', '-8');
+                propBlade1.setAttribute('rx', '11'); propBlade1.setAttribute('ry', '2.5');
+                propBlade1.setAttribute('fill', stroke);
+
+                const propBlade2 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                propBlade2.setAttribute('cx', '0'); propBlade2.setAttribute('cy', '-8');
+                propBlade2.setAttribute('rx', '2.5'); propBlade2.setAttribute('ry', '11');
+                propBlade2.setAttribute('fill', stroke);
+
+                const cockpit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                cockpit.setAttribute('cx', '0');
+                cockpit.setAttribute('cy', `${S * 0.4}`);
+                cockpit.setAttribute('r', '3.5');
+                cockpit.setAttribute('fill', showAlways ? '#6fffe9' : '#ff0055');
+
+                g.appendChild(body);
+                g.appendChild(mainWing);
+                g.appendChild(tailWing);
+                g.appendChild(cockpit);
+                g.appendChild(propBlade1);
+                g.appendChild(propBlade2);
+                g.appendChild(propHub);
+
+                svg.appendChild(g);
+            });
+        }
+
+        // 初始化摆放阶段
+        initPlacementStage();
+    </script>
+</body>
+</html>
