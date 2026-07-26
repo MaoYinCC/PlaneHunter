@@ -37,3 +37,6 @@
 ## 🚀 快速开始 / 本地运行
 
 由于本项目为纯前端静态页面，无需任何 Node.js 或后端服务器环境：
+
+打开网页直接开玩：
+https://github.com/MaoYinCC/PlaneHunter
