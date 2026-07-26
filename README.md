@@ -40,3 +40,63 @@
 
 打开网页直接开玩：
 https://maoyincc.github.io/PlaneHunter/
+
+==
+
+# ✈️ Air Force Battle (Plane Bomber)
+
+A classic "Plane Bomber / Headshot" strategy battle web game built entirely with front-end technologies (HTML5 + JavaScript + CSS3 + SVG). It supports single-player vs. AI mode and peer-to-peer (P2P) online multiplayer, ready to play out of the box with zero dependencies or build steps required.
+
+---
+
+## 🎮 Game Rules & Gameplay
+
+1. **Board Rules:** Both players hide and deploy 3 aircraft on their respective $9 \times 9$ grid.
+2. **Plane Structure:** Each plane consists of 1 head, 3 body/wing nodes, and 1 tail (occupying a total of 5 cells).
+3. **Victory Condition:**
+* Hitting the body, wings, or tail is recorded as a "Hit ✖".
+* Hitting the head directly "Destroys the entire plane 💥".
+* The first player to destroy all 3 enemy heads wins the game!
+
+
+
+---
+
+## ✨ Key Features
+
+* **🛠️ Interactive Deployment:**
+* Click the grid to rotate the aircraft 90° clockwise and place it.
+* Lock your placement to automatically switch to the next aircraft.
+* Supports one-click 🎲 random placement and 🗑️ clearing.
+
+
+* **🤖 Intelligent PVE AI Battle:**
+* Built-in AI tactical logic: when the AI hits a plane body, it automatically tracks and probes surrounding adjacent cells.
+
+
+* **🌐 P2P Online Multiplayer:**
+* Connect directly with friends using room IDs powered by PeerJS for real-time online matches.
+
+
+* **🎨 Vector SVG Dynamic Rendering:**
+* Uses native SVG to render detailed aircraft models, clearly displaying complete player and enemy formations in review mode.
+
+
+* **🎵 Native Web Audio API Sound Effects:**
+* Generates firing, hit, explosion, and victory/defeat sound effects using the browser's built-in audio synthesizer without external audio files.
+
+
+* **🌐 Bilingual Support (CN / EN):**
+* Built-in one-click switching between Chinese and English interfaces.
+
+
+
+---
+
+## 🚀 Quick Start / Local Execution
+
+Since this project is a purely static front-end page, it requires no Node.js or backend server environment:
+
+Open the link to play directly:
+
+[https://maoyincc.github.io/PlaneHunter/](https://maoyincc.github.io/PlaneHunter/)
