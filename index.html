@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Air Force Battle - Plane Bomber</title>
+    <!-- 引入 PeerJS 库 (零成本 P2P 联机) -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --bg-color: #0b132b;
@@ -97,6 +99,34 @@
             background: var(--accent-blue);
             color: #0b132b;
             font-weight: 700;
+        }
+
+        /* 联机控制面板样式 */
+        .p2p-panel {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-blue);
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .p2p-input {
+            background: #111827;
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: monospace;
+            outline: none;
+            width: 130px;
+            text-align: center;
         }
 
         .status-bar {
@@ -306,7 +336,17 @@
 
     <div class="mode-selector">
         <button class="mode-btn active" id="btn-pve" onclick="switchMode('pve')">单人模式</button>
-        <button class="mode-btn" id="btn-pvp" onclick="switchMode('pvp')">双人模式</button>
+        <button class="mode-btn" id="btn-pvp" onclick="switchMode('pvp')">双人模拟器</button>
+        <button class="mode-btn" id="btn-p2p" onclick="switchMode('p2p')">🌐 网络对战</button>
+    </div>
+
+    <!-- P2P 房间控制面板 -->
+    <div class="p2p-panel" id="p2pPanel">
+        <span>我的房间ID: <strong id="myPeerId" style="color: var(--accent-blue);">生成中...</strong></span>
+        <button class="btn-action" style="padding: 4px 8px; font-size: 12px;" onclick="copyMyId()">📋 复制ID</button>
+        <span style="margin: 0 5px; color: var(--border-color);">|</span>
+        <input type="text" id="targetPeerId" class="p2p-input" placeholder="输入对手ID">
+        <button class="btn-action" style="padding: 4px 12px; font-size: 12px;" onclick="connectToPeer()">🔗 连接对手</button>
     </div>
 
     <div class="status-bar" id="statusBar">🛠️ 点击网格旋转当前战机；锁定后自动调整下一架</div>
@@ -357,14 +397,21 @@
             zh: {
                 langBtn: '🌐 English',
                 pveMode: '单人模式',
-                pvpMode: '双人模式',
+                pvpMode: '双人模拟器',
+                p2pMode: '🌐 网络对战',
                 statusPlacing: '🛠️ 点击网格旋转战机；满意后点击“锁定战机”切换下一架',
                 statusPlacingFull: '✅ 3架战机已就位！点击“🚀 确认开战”开始游戏',
                 pveStatus: '🎯 战斗开始：点击敌方区域探测敌机位置并击落机头！',
                 pvpStatus: '👥 双人模式：点击右侧棋盘循环标记 [空 • / 机身 ✖ / 机头 💥]',
+                p2pWaitingConn: '🌐 P2P 对战：请创建房间并共享ID，或输入对手ID进行连接',
+                p2pConnectedReady: '🤝 已成功建立连接！请完成布阵并点击“🚀 确认开战”',
+                p2pWaitingOpponentReady: '⏳ 你的阵地已锁死，正在等待对手完成布阵...',
+                p2pYourTurn: '⚔️ 轮到你的回合！点击敌方区域开火',
+                p2pOpponentTurn: '🛡️ 对手思考中，等待对手开火...',
                 myTerritory: '🛡️ 我方阵地',
                 enemyTerritoryPVE: '🎯 敌方阵地',
                 enemyTerritoryPVP: '🎯 敌方阵地 (手动记录)',
+                enemyTerritoryP2P: '🎯 敌方阵地 (网络对战)',
                 lockPlane: '📌 锁定战机',
                 random: '🎲 随机布阵',
                 clear: '🗑️ 清空',
@@ -377,7 +424,7 @@
                 loseTitle: '💀 遗憾战败！',
                 loseDesc: '敌方指挥官突破了你的防线！',
                 statusWin: '🏆 游戏结束 - 你赢了！',
-                statusLose: '💀 游戏结束 - 电脑获胜！',
+                statusLose: '💀 游戏结束 - 敌方获胜！',
                 reviewMode: '🔍 战局复盘模式：已揭示双方战机位置。',
                 reviewBtn: '🔍 战局复盘',
                 replayBtn: '🔄 再来一局'
@@ -385,14 +432,21 @@
             en: {
                 langBtn: '🌐 中文',
                 pveMode: 'Single Player',
-                pvpMode: '2 Players',
+                pvpMode: '2P Local',
+                p2pMode: '🌐 P2P Online',
                 statusPlacing: '🛠️ Click grid to rotate plane; click "Lock Plane" when done',
                 statusPlacingFull: '✅ All 3 planes locked! Click "Start Battle" to play',
                 pveStatus: '🎯 Battle Phase: Click enemy grid to locate and destroy aircraft heads!',
                 pvpStatus: '👥 2 Players: Click right grid to cycle marks [Empty • / Body ✖ / Head 💥]',
+                p2pWaitingConn: '🌐 P2P Online: Share your Room ID or enter opponent\'s ID to connect',
+                p2pConnectedReady: '🤝 Connected! Deploy your fleet and click "Start Battle"',
+                p2pWaitingOpponentReady: '⏳ Your fleet is locked. Waiting for opponent to ready up...',
+                p2pYourTurn: '⚔️ Your Turn! Strike enemy targets',
+                p2pOpponentTurn: '🛡️ Opponent\'s Turn, waiting for incoming attack...',
                 myTerritory: '🛡️ My Territory',
                 enemyTerritoryPVE: '🎯 Enemy Territory',
-                enemyTerritoryPVP: '🎯 Enemy Territory (Tracker)',
+                enemyTerritoryPVP: '🎯 Enemy Tracker',
+                enemyTerritoryP2P: '🎯 Enemy Territory (Online)',
                 lockPlane: '📌 Lock Plane',
                 random: '🎲 Random',
                 clear: '🗑️ Clear',
@@ -405,7 +459,7 @@
                 loseTitle: '💀 Defeated!',
                 loseDesc: 'The enemy broke through your defenses!',
                 statusWin: '🏆 Game Over - You Won!',
-                statusLose: '💀 Game Over - AI Won!',
+                statusLose: '💀 Game Over - Enemy Won!',
                 reviewMode: '🔍 Review Mode: All formations revealed.',
                 reviewBtn: '🔍 Review',
                 replayBtn: '🔄 Play Again'
@@ -418,10 +472,10 @@
         const CELL_SIZE = 38;
         const GAP = 2;
 
-        let gameMode = 'pve'; 
+        let gameMode = 'pve'; // 'pve', 'pvp', 'p2p'
         let isPlacingStage = true;
-        let selectedPlaneIndex = 0; // 当前正在摆放的战机 (0, 1, 2)
-        let currentDirIndex = 0; // 0: U, 1: R, 2: D, 3: L
+        let selectedPlaneIndex = 0;
+        let currentDirIndex = 0;
         const DIRS = ['U', 'R', 'D', 'L'];
 
         let hoveredR = -1, hoveredC = -1;
@@ -433,6 +487,14 @@
         let soundEnabled = true;
 
         let aiTargetQueue = [];
+
+        /* P2P 联机状态变量 */
+        let peer = null;
+        let conn = null;
+        let p2pIsHost = false;
+        let p2pMyReady = false;
+        let p2pOpponentReady = false;
+        let p2pMyTurn = false;
 
         const PLANE_SHAPES = {
             'U': [
@@ -459,7 +521,6 @@
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 快捷键: 空格 / 回车 锁定当前飞机
         window.addEventListener('keydown', (e) => {
             if (isPlacingStage && (e.key === 'Enter' || e.key === ' ')) {
                 e.preventDefault();
@@ -477,8 +538,13 @@
             document.getElementById('langToggleBtn').innerText = t.langBtn;
             document.getElementById('btn-pve').innerText = t.pveMode;
             document.getElementById('btn-pvp').innerText = t.pvpMode;
+            document.getElementById('btn-p2p').innerText = t.p2pMode;
             document.getElementById('playerBoardTitle').innerText = t.myTerritory;
-            document.getElementById('enemyBoardTitle').innerText = gameMode === 'pve' ? t.enemyTerritoryPVE : t.enemyTerritoryPVP;
+
+            if (gameMode === 'pve') document.getElementById('enemyBoardTitle').innerText = t.enemyTerritoryPVE;
+            else if (gameMode === 'pvp') document.getElementById('enemyBoardTitle').innerText = t.enemyTerritoryPVP;
+            else document.getElementById('enemyBoardTitle').innerText = t.enemyTerritoryP2P;
+
             document.getElementById('lockPlaneBtn').innerText = t.lockPlane;
             document.getElementById('randomBtn').innerText = t.random;
             document.getElementById('clearBtn').innerText = t.clear;
@@ -488,10 +554,22 @@
             document.getElementById('reviewBtn').innerText = t.reviewBtn;
             document.getElementById('replayBtn').innerText = t.replayBtn;
 
-            if (isPlacingStage) {
-                document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
-            } else if (!gameOver) {
-                document.getElementById('statusBar').innerText = gameMode === 'pve' ? t.pveStatus : t.pvpStatus;
+            if (gameMode === 'p2p') {
+                if (!conn) {
+                    document.getElementById('statusBar').innerText = t.p2pWaitingConn;
+                } else if (isPlacingStage) {
+                    document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
+                } else if (p2pMyReady && !p2pOpponentReady) {
+                    document.getElementById('statusBar').innerText = t.p2pWaitingOpponentReady;
+                } else if (!gameOver) {
+                    document.getElementById('statusBar').innerText = p2pMyTurn ? t.p2pYourTurn : t.p2pOpponentTurn;
+                }
+            } else {
+                if (isPlacingStage) {
+                    document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
+                } else if (!gameOver) {
+                    document.getElementById('statusBar').innerText = gameMode === 'pve' ? t.pveStatus : t.pvpStatus;
+                }
             }
         }
 
@@ -575,9 +653,163 @@
             gameMode = mode;
             document.getElementById('btn-pve').classList.toggle('active', mode === 'pve');
             document.getElementById('btn-pvp').classList.toggle('active', mode === 'pvp');
+            document.getElementById('btn-p2p').classList.toggle('active', mode === 'p2p');
+
+            document.getElementById('p2pPanel').style.display = mode === 'p2p' ? 'flex' : 'none';
+
+            if (mode === 'p2p' && !peer) {
+                initPeerJS();
+            }
+
             initPlacementStage();
         }
 
+        /* ---------------- PeerJS P2P 核心网络逻辑 ---------------- */
+        function initPeerJS() {
+            // 生成6位随机房间号，便于输入
+            const randomId = Math.floor(100000 + Math.random() * 900000).toString();
+            peer = new Peer('afb-' + randomId);
+
+            peer.on('open', (id) => {
+                document.getElementById('myPeerId').innerText = id.replace('afb-', '');
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                p2pIsHost = true;
+                setupConnectionListeners();
+            });
+
+            peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                alert('P2P 连接发生错误: ' + err.type);
+            });
+        }
+
+        function connectToPeer() {
+            const rawInput = document.getElementById('targetPeerId').value.trim();
+            if (!rawInput) return;
+            const targetId = rawInput.startsWith('afb-') ? rawInput : 'afb-' + rawInput;
+
+            if (peer) {
+                conn = peer.connect(targetId);
+                p2pIsHost = false;
+                setupConnectionListeners();
+            }
+        }
+
+        function copyMyId() {
+            const idText = document.getElementById('myPeerId').innerText;
+            if (idText && idText !== '生成中...') {
+                navigator.clipboard.writeText(idText).then(() => {
+                    alert('已成功复制房间ID：' + idText);
+                });
+            }
+        }
+
+        function setupConnectionListeners() {
+            conn.on('open', () => {
+                updateUIByLanguage();
+                initPlacementStage();
+            });
+
+            conn.on('data', (data) => {
+                handleP2PData(data);
+            });
+
+            conn.on('close', () => {
+                alert('对手已断开连接！');
+                conn = null;
+                initPlacementStage();
+            });
+        }
+
+        function sendP2PData(data) {
+            if (conn && conn.open) {
+                conn.send(data);
+            }
+        }
+
+        function handleP2PData(data) {
+            if (data.type === 'READY') {
+                p2pOpponentReady = true;
+                checkBothP2PReady();
+            } else if (data.type === 'ATTACK') {
+                handleIncomingP2PAttack(data.r, data.c);
+            } else if (data.type === 'ATTACK_RESULT') {
+                handleP2PAttackResult(data.r, data.c, data.result, data.remainingHeads);
+            } else if (data.type === 'RESTART') {
+                initPlacementStage();
+            }
+        }
+
+        function checkBothP2PReady() {
+            if (p2pMyReady && p2pOpponentReady) {
+                isPlacingStage = false;
+                p2pMyTurn = p2pIsHost; // 主创房间者先行开火
+                updateUIByLanguage();
+                renderBoard('player-grid', playerBoard, true);
+                renderBoard('ai-grid', aiBoard, false);
+            } else {
+                updateUIByLanguage();
+            }
+        }
+
+        function handleIncomingP2PAttack(r, c) {
+            playerBoard[r][c].hit = true;
+            let result = 'miss';
+
+            if (playerBoard[r][c].type === 'head') {
+                playerHeads--;
+                result = 'boom';
+                playSound('boom');
+            } else if (playerBoard[r][c].type === 'body') {
+                result = 'hit';
+                playSound('hit');
+            } else {
+                playSound('miss');
+            }
+
+            renderBoard('player-grid', playerBoard, true);
+
+            sendP2PData({
+                type: 'ATTACK_RESULT',
+                r, c,
+                result: result,
+                remainingHeads: playerHeads
+            });
+
+            if (playerHeads === 0) {
+                gameOver = true;
+                showGameOverModal(false);
+            } else {
+                p2pMyTurn = true;
+                updateUIByLanguage();
+                renderBoard('ai-grid', aiBoard, false);
+            }
+        }
+
+        function handleP2PAttackResult(r, c, result, remainingHeads) {
+            aiBoard[r][c].hit = true;
+            aiBoard[r][c].type = result === 'boom' ? 'head' : (result === 'hit' ? 'body' : 'empty');
+
+            if (result === 'boom') playSound('boom');
+            else if (result === 'hit') playSound('hit');
+            else playSound('miss');
+
+            renderBoard('ai-grid', aiBoard, false);
+
+            if (remainingHeads === 0) {
+                gameOver = true;
+                showGameOverModal(true);
+            } else {
+                p2pMyTurn = false;
+                updateUIByLanguage();
+                renderBoard('ai-grid', aiBoard, false);
+            }
+        }
+
+        /* ---------------- 基础算法与棋盘操作 ---------------- */
         function createEmptyBoard() {
             return Array(SIZE).fill(null).map(() => Array(SIZE).fill(null).map(() => ({ type: 'empty', hitState: 'none', hit: false, planeId: null })));
         }
@@ -629,6 +861,9 @@
             aiTargetQueue = [];
             selectedPlaneIndex = 0;
 
+            p2pMyReady = false;
+            p2pOpponentReady = false;
+
             document.getElementById('lockPlaneBtn').style.display = 'inline-block';
             document.getElementById('randomBtn').style.display = 'inline-block';
             document.getElementById('clearBtn').style.display = 'inline-block';
@@ -645,9 +880,9 @@
         }
 
         function updateStartButtonState() {
-            document.getElementById('startBtn').disabled = playerPlanes.length !== 3;
+            document.getElementById('startBtn').disabled = playerPlanes.length !== 3 || (gameMode === 'p2p' && !conn);
             const t = i18n[currentLang];
-            if (isPlacingStage) {
+            if (isPlacingStage && gameMode !== 'p2p') {
                 document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
             }
         }
@@ -702,7 +937,6 @@
             }
         }
 
-        // 锁定当前选中的战机位置，并自动切换到下一架未放置的战机
         function confirmSinglePlane() {
             const targetPlaneId = selectedPlaneIndex + 1;
             if (!playerPlanes.some(p => p.id === targetPlaneId)) {
@@ -710,7 +944,6 @@
                 return;
             }
 
-            // 寻找下一个还没放置的战机序号
             for (let i = 0; i < 3; i++) {
                 if (!playerPlanes.some(p => p.id === i + 1)) {
                     selectedPlaneIndex = i;
@@ -724,6 +957,21 @@
 
         function confirmPlacement() {
             if (playerPlanes.length < 3) return;
+
+            if (gameMode === 'p2p') {
+                if (!conn) return;
+                p2pMyReady = true;
+                sendP2PData({ type: 'READY' });
+
+                document.getElementById('lockPlaneBtn').style.display = 'none';
+                document.getElementById('randomBtn').style.display = 'none';
+                document.getElementById('clearBtn').style.display = 'none';
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('exitBtn').style.display = 'inline-block';
+
+                checkBothP2PReady();
+                return;
+            }
 
             isPlacingStage = false;
             document.getElementById('lockPlaneBtn').style.display = 'none';
@@ -743,8 +991,10 @@
             drawPlanesSVG('ai-planes-svg', aiPlanes, false);
         }
 
-        /* 退出 / 重新布阵 */
         function exitGame() {
+            if (gameMode === 'p2p' && conn) {
+                sendP2PData({ type: 'RESTART' });
+            }
             initPlacementStage();
         }
 
@@ -777,7 +1027,6 @@
                             clearPlacementPreview();
                         };
                         
-                        // 每次点击：旋转当前战机并更新位置
                         cellEl.onclick = () => handlePlacementClick(r, c);
 
                         cellEl.oncontextmenu = (e) => {
@@ -785,7 +1034,24 @@
                             handlePlacementClick(r, c);
                         };
                     } else if (!isPlacingStage) {
-                        if (gameMode === 'pve') {
+                        if (gameMode === 'p2p') {
+                            if (isPlayer) {
+                                if (cellData.hit) {
+                                    if (cellData.type === 'head') cellEl.classList.add('head-boom');
+                                    else if (cellData.type === 'body') cellEl.classList.add('hit');
+                                    else cellEl.classList.add('miss');
+                                }
+                            } else {
+                                if (cellData.hit) {
+                                    if (cellData.type === 'head') cellEl.classList.add('head-boom');
+                                    else if (cellData.type === 'body') cellEl.classList.add('hit');
+                                    else cellEl.classList.add('miss');
+                                } else if (p2pMyTurn && !gameOver) {
+                                    cellEl.classList.add('targetable');
+                                    cellEl.onclick = () => playerAttackP2P(r, c);
+                                }
+                            }
+                        } else if (gameMode === 'pve') {
                             if (cellData.hit) {
                                 if (cellData.type === 'head') cellEl.classList.add('head-boom');
                                 else if (cellData.type === 'body') cellEl.classList.add('hit');
@@ -854,15 +1120,12 @@
             cells.forEach(c => c.classList.remove('hover-valid', 'hover-invalid'));
         }
 
-        // 每次点击棋盘：旋转方向 90 度并尝试摆放
         function handlePlacementClick(r, c) {
             const targetPlaneId = selectedPlaneIndex + 1;
             
-            // 切换方向
             currentDirIndex = (currentDirIndex + 1) % DIRS.length;
             const dir = DIRS[currentDirIndex];
 
-            // 判断是否合规
             if (canPlacePlane(playerBoard, r, c, dir, targetPlaneId)) {
                 removePlaneFromBoard(playerBoard, playerPlanes, targetPlaneId);
                 placePlane(playerBoard, playerPlanes, r, c, dir, targetPlaneId);
@@ -875,6 +1138,19 @@
                 playSound('miss');
                 highlightPlacementPreview(r, c);
             }
+        }
+
+        /* ---------------- P2P 攻击逻辑 ---------------- */
+        function playerAttackP2P(r, c) {
+            if (!p2pMyTurn || gameOver || aiBoard[r][c].hit) return;
+            p2pMyTurn = false; // 发起攻击后锁定，等待对方返回结果
+            updateUIByLanguage();
+            renderBoard('ai-grid', aiBoard, false);
+
+            sendP2PData({
+                type: 'ATTACK',
+                r, c
+            });
         }
 
         /* ---------------- PVE 战斗逻辑 ---------------- */
@@ -1114,7 +1390,7 @@
             });
         }
 
-        // 初始化摆放阶段
+        // 初始化
         initPlacementStage();
     </script>
 </body>
