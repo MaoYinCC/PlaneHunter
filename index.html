@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Force Battle - Plane Bomber</title>
+    <title>Air Force Battle - Q-Version Planes</title>
     <!-- 引入 PeerJS 库 (零成本 P2P 联机) -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -1242,7 +1242,7 @@
             document.getElementById('statusBar').innerText = i18n[currentLang].reviewMode;
         }
 
-        /* ---------------- SVG 飞机矢量渲染 ---------------- */
+        /* ---------------- 超级Q版卡通风格飞机 SVG 渲染 ---------------- */
         function drawPlanesSVG(svgId, planes, showAlways) {
             const svg = document.getElementById(svgId);
             svg.innerHTML = '';
@@ -1269,65 +1269,70 @@
                 g.setAttribute('transform', `translate(${headCenter.x}, ${headCenter.y}) rotate(${angle})`);
 
                 const S = CELL_SIZE + GAP;
-                const stroke = showAlways ? '#00f5d4' : '#ff0055';
-                const fill = showAlways ? 'rgba(0, 245, 212, 0.25)' : 'rgba(255, 0, 85, 0.35)';
+                const strokeColor = showAlways ? '#00f5d4' : '#ff0055';
+                const mainColor = showAlways ? 'rgba(255, 130, 50, 0.9)' : 'rgba(255, 0, 85, 0.45)';
+                const wingColor = showAlways ? 'rgba(0, 205, 170, 0.9)' : 'rgba(0, 245, 212, 0.45)';
 
+                // 超Q圆胖机头 / 机身
                 const body = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                body.setAttribute('x', '-5');
-                body.setAttribute('y', '-8');
-                body.setAttribute('width', '10');
-                body.setAttribute('height', `${S * 2 + 18}`);
-                body.setAttribute('rx', '5');
-                body.setAttribute('fill', fill);
-                body.setAttribute('stroke', stroke);
-                body.setAttribute('stroke-width', '1.8');
+                body.setAttribute('x', '-12');
+                body.setAttribute('y', '-12');
+                body.setAttribute('width', '24');
+                body.setAttribute('height', `${S * 2 + 24}`);
+                body.setAttribute('rx', '12'); // 圆角拉满，更加 Q 萌
+                body.setAttribute('fill', mainColor);
+                body.setAttribute('stroke', strokeColor);
+                body.setAttribute('stroke-width', '2');
 
+                // 宽大圆角主机翼
                 const mainWing = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                mainWing.setAttribute('x', `-${S * 0.92}`);
-                mainWing.setAttribute('y', `${S - 7}`);
-                mainWing.setAttribute('width', `${S * 1.84}`);
-                mainWing.setAttribute('height', `14`);
-                mainWing.setAttribute('rx', `5`);
-                mainWing.setAttribute('fill', fill);
-                mainWing.setAttribute('stroke', stroke);
+                mainWing.setAttribute('x', `-${S * 1.25}`);
+                mainWing.setAttribute('y', `${S - 6}`);
+                mainWing.setAttribute('width', `${S * 2.5}`);
+                mainWing.setAttribute('height', `20`);
+                mainWing.setAttribute('rx', `10`);
+                mainWing.setAttribute('fill', wingColor);
+                mainWing.setAttribute('stroke', strokeColor);
                 mainWing.setAttribute('stroke-width', '2');
 
+                // 可爱小机尾
                 const tailWing = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                tailWing.setAttribute('x', `-${S * 0.45}`);
-                tailWing.setAttribute('y', `${S * 2 + 1}`);
-                tailWing.setAttribute('width', `${S * 0.9}`);
-                tailWing.setAttribute('height', `8`);
-                tailWing.setAttribute('rx', `3`);
-                tailWing.setAttribute('fill', fill);
-                tailWing.setAttribute('stroke', stroke);
+                tailWing.setAttribute('x', `-${S * 0.6}`);
+                tailWing.setAttribute('y', `${S * 2 + 2}`);
+                tailWing.setAttribute('width', `${S * 1.2}`);
+                tailWing.setAttribute('height', `12`);
+                tailWing.setAttribute('rx', `6`);
+                tailWing.setAttribute('fill', wingColor);
+                tailWing.setAttribute('stroke', strokeColor);
                 tailWing.setAttribute('stroke-width', '1.5');
 
+                // Q版大风挡玻璃（座舱）
+                const cockpit = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                cockpit.setAttribute('cx', '0');
+                cockpit.setAttribute('cy', `${S * 0.45}`);
+                cockpit.setAttribute('rx', '7');
+                cockpit.setAttribute('ry', '14');
+                cockpit.setAttribute('fill', '#6fffe9');
+                cockpit.setAttribute('stroke', strokeColor);
+                cockpit.setAttribute('stroke-width', '1.5');
+
+                // 机头Q版小螺旋桨
                 const propHub = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                propHub.setAttribute('cx', '0'); propHub.setAttribute('cy', '-8'); propHub.setAttribute('r', '4.5');
+                propHub.setAttribute('cx', '0'); propHub.setAttribute('cy', '-14'); propHub.setAttribute('r', '6');
                 propHub.setAttribute('fill', '#ff0055');
 
-                const propBlade1 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-                propBlade1.setAttribute('cx', '0'); propBlade1.setAttribute('cy', '-8');
-                propBlade1.setAttribute('rx', '11'); propBlade1.setAttribute('ry', '2.5');
-                propBlade1.setAttribute('fill', stroke);
-
-                const propBlade2 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-                propBlade2.setAttribute('cx', '0'); propBlade2.setAttribute('cy', '-8');
-                propBlade2.setAttribute('rx', '2.5'); propBlade2.setAttribute('ry', '11');
-                propBlade2.setAttribute('fill', stroke);
-
-                const cockpit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                cockpit.setAttribute('cx', '0');
-                cockpit.setAttribute('cy', `${S * 0.4}`);
-                cockpit.setAttribute('r', '3.5');
-                cockpit.setAttribute('fill', showAlways ? '#6fffe9' : '#ff0055');
+                const propBlade = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                propBlade.setAttribute('cx', '0'); propBlade.setAttribute('cy', '-14');
+                propBlade.setAttribute('rx', '16'); propBlade.setAttribute('ry', '4');
+                propBlade.setAttribute('fill', '#6fffe9');
+                propBlade.setAttribute('stroke', strokeColor);
+                propBlade.setAttribute('stroke-width', '1');
 
                 g.appendChild(body);
                 g.appendChild(mainWing);
                 g.appendChild(tailWing);
                 g.appendChild(cockpit);
-                g.appendChild(propBlade1);
-                g.appendChild(propBlade2);
+                g.appendChild(propBlade);
                 g.appendChild(propHub);
 
                 svg.appendChild(g);
