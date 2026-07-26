@@ -336,7 +336,6 @@
 
     <div class="mode-selector">
         <button class="mode-btn active" id="btn-pve" onclick="switchMode('pve')">单人模式</button>
-        <button class="mode-btn" id="btn-pvp" onclick="switchMode('pvp')">双人模拟器</button>
         <button class="mode-btn" id="btn-p2p" onclick="switchMode('p2p')">🌐 网络对战</button>
     </div>
 
@@ -397,12 +396,10 @@
             zh: {
                 langBtn: '🌐 English',
                 pveMode: '单人模式',
-                pvpMode: '双人模拟器',
                 p2pMode: '🌐 网络对战',
                 statusPlacing: '🛠️ 点击网格旋转战机；满意后点击“锁定战机”切换下一架',
                 statusPlacingFull: '✅ 3架战机已就位！点击“🚀 确认开战”开始游戏',
                 pveStatus: '🎯 战斗开始：点击敌方区域探测敌机位置并击落机头！',
-                pvpStatus: '👥 双人模式：点击右侧棋盘循环标记 [空 • / 机身 ✖ / 机头 💥]',
                 p2pWaitingConn: '🌐 P2P 对战：请创建房间并共享ID，或输入对手ID进行连接',
                 p2pConnectedReady: '🤝 已成功建立连接！请完成布阵并点击“🚀 确认开战”',
                 p2pWaitingOpponentReady: '⏳ 你的阵地已锁死，正在等待对手完成布阵...',
@@ -410,7 +407,6 @@
                 p2pOpponentTurn: '🛡️ 对手思考中，等待对手开火...',
                 myTerritory: '🛡️ 我方阵地',
                 enemyTerritoryPVE: '🎯 敌方阵地',
-                enemyTerritoryPVP: '🎯 敌方阵地 (手动记录)',
                 enemyTerritoryP2P: '🎯 敌方阵地 (网络对战)',
                 lockPlane: '📌 锁定战机',
                 random: '🎲 随机布阵',
@@ -432,12 +428,10 @@
             en: {
                 langBtn: '🌐 中文',
                 pveMode: 'Single Player',
-                pvpMode: '2P Local',
                 p2pMode: '🌐 P2P Online',
                 statusPlacing: '🛠️ Click grid to rotate plane; click "Lock Plane" when done',
                 statusPlacingFull: '✅ All 3 planes locked! Click "Start Battle" to play',
                 pveStatus: '🎯 Battle Phase: Click enemy grid to locate and destroy aircraft heads!',
-                pvpStatus: '👥 2 Players: Click right grid to cycle marks [Empty • / Body ✖ / Head 💥]',
                 p2pWaitingConn: '🌐 P2P Online: Share your Room ID or enter opponent\'s ID to connect',
                 p2pConnectedReady: '🤝 Connected! Deploy your fleet and click "Start Battle"',
                 p2pWaitingOpponentReady: '⏳ Your fleet is locked. Waiting for opponent to ready up...',
@@ -445,7 +439,6 @@
                 p2pOpponentTurn: '🛡️ Opponent\'s Turn, waiting for incoming attack...',
                 myTerritory: '🛡️ My Territory',
                 enemyTerritoryPVE: '🎯 Enemy Territory',
-                enemyTerritoryPVP: '🎯 Enemy Tracker',
                 enemyTerritoryP2P: '🎯 Enemy Territory (Online)',
                 lockPlane: '📌 Lock Plane',
                 random: '🎲 Random',
@@ -472,7 +465,7 @@
         const CELL_SIZE = 38;
         const GAP = 2;
 
-        let gameMode = 'pve'; // 'pve', 'pvp', 'p2p'
+        let gameMode = 'pve'; // 'pve', 'p2p'
         let isPlacingStage = true;
         let selectedPlaneIndex = 0;
         let currentDirIndex = 0;
@@ -537,12 +530,10 @@
             const t = i18n[currentLang];
             document.getElementById('langToggleBtn').innerText = t.langBtn;
             document.getElementById('btn-pve').innerText = t.pveMode;
-            document.getElementById('btn-pvp').innerText = t.pvpMode;
             document.getElementById('btn-p2p').innerText = t.p2pMode;
             document.getElementById('playerBoardTitle').innerText = t.myTerritory;
 
             if (gameMode === 'pve') document.getElementById('enemyBoardTitle').innerText = t.enemyTerritoryPVE;
-            else if (gameMode === 'pvp') document.getElementById('enemyBoardTitle').innerText = t.enemyTerritoryPVP;
             else document.getElementById('enemyBoardTitle').innerText = t.enemyTerritoryP2P;
 
             document.getElementById('lockPlaneBtn').innerText = t.lockPlane;
@@ -568,7 +559,7 @@
                 if (isPlacingStage) {
                     document.getElementById('statusBar').innerText = playerPlanes.length === 3 ? t.statusPlacingFull : t.statusPlacing;
                 } else if (!gameOver) {
-                    document.getElementById('statusBar').innerText = gameMode === 'pve' ? t.pveStatus : t.pvpStatus;
+                    document.getElementById('statusBar').innerText = t.pveStatus;
                 }
             }
         }
@@ -652,7 +643,6 @@
         function switchMode(mode) {
             gameMode = mode;
             document.getElementById('btn-pve').classList.toggle('active', mode === 'pve');
-            document.getElementById('btn-pvp').classList.toggle('active', mode === 'pvp');
             document.getElementById('btn-p2p').classList.toggle('active', mode === 'p2p');
 
             document.getElementById('p2pPanel').style.display = mode === 'p2p' ? 'flex' : 'none';
@@ -666,7 +656,6 @@
 
         /* ---------------- PeerJS P2P 核心网络逻辑 ---------------- */
         function initPeerJS() {
-            // 生成6位随机房间号，便于输入
             const randomId = Math.floor(100000 + Math.random() * 900000).toString();
             peer = new Peer('afb-' + randomId);
 
@@ -811,7 +800,7 @@
 
         /* ---------------- 基础算法与棋盘操作 ---------------- */
         function createEmptyBoard() {
-            return Array(SIZE).fill(null).map(() => Array(SIZE).fill(null).map(() => ({ type: 'empty', hitState: 'none', hit: false, planeId: null })));
+            return Array(SIZE).fill(null).map(() => Array(SIZE).fill(null).map(() => ({ type: 'empty', hit: false, planeId: null })));
         }
 
         function canPlacePlane(board, headR, headC, dir, ignorePlaneId = null) {
@@ -843,7 +832,7 @@
             for (let r = 0; r < SIZE; r++) {
                 for (let c = 0; c < SIZE; c++) {
                     if (board[r][c].planeId === planeId) {
-                        board[r][c] = { type: 'empty', hitState: 'none', hit: false, planeId: null };
+                        board[r][c] = { type: 'empty', hit: false, planeId: null };
                     }
                 }
             }
@@ -931,7 +920,7 @@
                 }
             }
             if (count < 3) {
-                for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) board[r][c] = { type: 'empty', hitState: 'none', hit: false, planeId: null };
+                for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) board[r][c] = { type: 'empty', hit: false, planeId: null };
                 planeList.length = 0;
                 autoGeneratePlanes(board, planeList);
             }
@@ -1060,24 +1049,6 @@
                                 cellEl.classList.add('targetable');
                                 cellEl.onclick = () => playerAttackPVE(r, c);
                             }
-                        } else {
-                            if (isPlayer) {
-                                if (cellData.hit) {
-                                    if (cellData.type === 'head') cellEl.classList.add('head-boom');
-                                    else if (cellData.type === 'body') cellEl.classList.add('hit');
-                                    else cellEl.classList.add('miss');
-                                } else {
-                                    cellEl.classList.add('targetable');
-                                    cellEl.onclick = () => togglePlayerHit(r, c);
-                                }
-                            } else {
-                                if (cellData.hitState === 'miss') cellEl.classList.add('miss');
-                                else if (cellData.hitState === 'hit') cellEl.classList.add('hit');
-                                else if (cellData.hitState === 'boom') cellEl.classList.add('head-boom');
-
-                                cellEl.classList.add('targetable');
-                                cellEl.onclick = () => togglePVPManualMark(r, c);
-                            }
                         }
                     }
 
@@ -1143,7 +1114,7 @@
         /* ---------------- P2P 攻击逻辑 ---------------- */
         function playerAttackP2P(r, c) {
             if (!p2pMyTurn || gameOver || aiBoard[r][c].hit) return;
-            p2pMyTurn = false; // 发起攻击后锁定，等待对方返回结果
+            p2pMyTurn = false;
             updateUIByLanguage();
             renderBoard('ai-grid', aiBoard, false);
 
@@ -1235,33 +1206,6 @@
                 gameOver = true;
                 showGameOverModal(false);
             }
-        }
-
-        /* ---------------- PVP 模式手动标记 ---------------- */
-        function togglePVPManualMark(r, c) {
-            const states = ['none', 'miss', 'hit', 'boom'];
-            const currentState = aiBoard[r][c].hitState || 'none';
-            const nextIndex = (states.indexOf(currentState) + 1) % states.length;
-            const nextState = states[nextIndex];
-
-            aiBoard[r][c].hitState = nextState;
-
-            if (nextState === 'miss') playSound('miss');
-            else if (nextState === 'hit') playSound('hit');
-            else if (nextState === 'boom') playSound('boom');
-
-            renderBoard('ai-grid', aiBoard, false);
-        }
-
-        function togglePlayerHit(r, c) {
-            if (playerBoard[r][c].hit) return;
-            playerBoard[r][c].hit = true;
-
-            if (playerBoard[r][c].type === 'head') playSound('boom');
-            else if (playerBoard[r][c].type === 'body') playSound('hit');
-            else playSound('miss');
-
-            renderBoard('player-grid', playerBoard, true);
         }
 
         /* ---------------- 弹窗与复盘 ---------------- */
